@@ -80,44 +80,26 @@ const SplitServerDialog = asDialog({ title: 'Split Server' })(({
 
     const unlimited = (v: number) => v === 0;
 
+    const cpuMax    = !unlimited(effectiveResources.cpu)    ? effectiveResources.cpu    : undefined;
+    const memMax    = !unlimited(effectiveResources.memory) ? effectiveResources.memory : undefined;
+    const diskMax   = !unlimited(effectiveResources.disk)   ? effectiveResources.disk   : undefined;
+    const swapMax   = effectiveResources.swap > 0           ? effectiveResources.swap   : undefined;
+
     const validationSchema = object().shape({
         name: string().max(191),
         description: string().nullable(),
-        cpu: number()
-            .transform((v) => (v === '' ? undefined : Number(v)))
-            .required('CPU is required')
-            .min(10, 'Minimum 10%')
-            .when([], (_, schema) =>
-                !unlimited(effectiveResources.cpu)
-                    ? schema.max(effectiveResources.cpu, `Max ${effectiveResources.cpu}%`)
-                    : schema
-            ),
-        memory: number()
-            .transform((v) => (v === '' ? undefined : Number(v)))
-            .required('Memory is required')
-            .min(128, 'Minimum 128 MiB')
-            .when([], (_, schema) =>
-                !unlimited(effectiveResources.memory)
-                    ? schema.max(effectiveResources.memory, `Max ${fmtMiB(effectiveResources.memory)}`)
-                    : schema
-            ),
-        disk: number()
-            .transform((v) => (v === '' ? undefined : Number(v)))
-            .required('Disk is required')
-            .min(256, 'Minimum 256 MiB')
-            .when([], (_, schema) =>
-                !unlimited(effectiveResources.disk)
-                    ? schema.max(effectiveResources.disk, `Max ${fmtMiB(effectiveResources.disk)}`)
-                    : schema
-            ),
-        swap: number()
-            .required()
-            .min(0)
-            .when([], (_, schema) =>
-                effectiveResources.swap > 0
-                    ? schema.max(effectiveResources.swap, `Max ${fmtMiB(effectiveResources.swap)}`)
-                    : schema
-            ),
+        cpu: cpuMax !== undefined
+            ? number().transform((v) => (v === '' ? undefined : Number(v))).required('CPU is required').min(10, 'Minimum 10%').max(cpuMax, `Max ${cpuMax}%`)
+            : number().transform((v) => (v === '' ? undefined : Number(v))).required('CPU is required').min(10, 'Minimum 10%'),
+        memory: memMax !== undefined
+            ? number().transform((v) => (v === '' ? undefined : Number(v))).required('Memory is required').min(128, 'Minimum 128 MiB').max(memMax, `Max ${fmtMiB(memMax)}`)
+            : number().transform((v) => (v === '' ? undefined : Number(v))).required('Memory is required').min(128, 'Minimum 128 MiB'),
+        disk: diskMax !== undefined
+            ? number().transform((v) => (v === '' ? undefined : Number(v))).required('Disk is required').min(256, 'Minimum 256 MiB').max(diskMax, `Max ${fmtMiB(diskMax)}`)
+            : number().transform((v) => (v === '' ? undefined : Number(v))).required('Disk is required').min(256, 'Minimum 256 MiB'),
+        swap: swapMax !== undefined
+            ? number().required().min(0).max(swapMax, `Max ${fmtMiB(swapMax)}`)
+            : number().required().min(0),
         database_limit: number()
             .transform((v) => (v === '' ? 0 : Number(v)))
             .required()
