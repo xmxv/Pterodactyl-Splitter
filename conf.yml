@@ -1,0 +1,37 @@
+info:
+  name: "Server Splitter"
+  identifier: "splitter"
+  description: "Split a server into smaller ones, deducting resources from the master atomically."
+  flags: ""
+  version: "2.0"
+  target: "beta-2024-12"
+  author: ""
+  icon: ""
+  website: ""
+
+admin:
+  view: "view.blade.php"
+  controller: ""
+  css: ""
+  wrapper: ""
+
+dashboard:
+  css: ""
+  wrapper: ""
+  components: "components"
+
+data:
+  directory: "private"
+  public: ""
+  console: ""
+
+requests:
+  views: ""
+  app: "app"
+  routers:
+    application: ""
+    client: "routers.php"
+    web: ""
+
+database:
+  migrations: "migrations"
