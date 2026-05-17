@@ -3,7 +3,7 @@ info:
   identifier: "splitter"
   description: "Split a server into smaller ones, deducting resources from the master atomically."
   flags: ""
-  version: "2.0"
+  version: "2.1"
   target: "beta-2024-12"
   author: ""
   icon: ""
