@@ -21,3 +21,4 @@ Route::group([
         Route::delete('/{uuid}', [{identifier}\SplitController::class, 'delete']);
     });
 });
+
