@@ -129,10 +129,6 @@ class SplitController extends ClientApiController
             'sync_subusers'    => 'sometimes|boolean',
         ]);
 
-        // Validate resources and lock allocation inside transaction.
-        // creationService->handle() is intentionally called OUTSIDE —
-        // it triggers a Wings API callback to the panel, which would get
-        // a 404 RecordNotFoundException if the row isn't committed yet.
         $payload = DB::transaction(function () use ($master, $data) {
             $master = Server::lockForUpdate()->findOrFail($master->id);
 
@@ -171,7 +167,10 @@ class SplitController extends ClientApiController
                 throw new DisplayException('No free allocations available on this node.');
             }
 
-            $egg = DB::table('eggs')->where('id', $master->egg_id)->firstOrFail();
+            $egg = DB::table('eggs')->where('id', $master->egg_id)->first();
+            if (!$egg) {
+                throw new DisplayException('Egg not found.');
+            }
 
             $environment = [];
             DB::table('egg_variables')->where('egg_id', $master->egg_id)->get()
@@ -188,7 +187,6 @@ class SplitController extends ClientApiController
             ];
         });
 
-        // Outside the transaction — Wings can now find the committed row.
         $master      = $payload['master'];
         $allocation  = $payload['allocation'];
         $egg         = $payload['egg'];
@@ -227,7 +225,8 @@ class SplitController extends ClientApiController
         if (!empty($data['sync_subusers'])) {
             foreach ($master->subusers as $subuser) {
                 if (!$newServer->subusers()->where('user_id', $subuser->user_id)->exists()) {
-                    $this->subuserCreationService->handle($newServer, $subuser->user->email, $subuser->permissions);
+                    $permissions = $subuser->permissions->pluck('permission')->toArray();
+                    $this->subuserCreationService->handle($newServer, $subuser->user->email, $permissions);
                 }
             }
         }
@@ -327,7 +326,8 @@ class SplitController extends ClientApiController
             if (!empty($data['sync_subusers'])) {
                 foreach ($master->subusers as $subuser) {
                     if (!$child->subusers()->where('user_id', $subuser->user_id)->exists()) {
-                        $this->subuserCreationService->handle($child, $subuser->user->email, $subuser->permissions);
+                        $permissions = $subuser->permissions->pluck('permission')->toArray();
+                        $this->subuserCreationService->handle($child, $subuser->user->email, $permissions);
                     }
                 }
             }
