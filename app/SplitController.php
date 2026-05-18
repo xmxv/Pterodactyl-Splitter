@@ -101,7 +101,7 @@ class SplitController extends ClientApiController
     {
         $this->requireMaster($server);
 
-        if ($request->user()->id !== $server->owner_id && !$request->user()->isRootAdmin()) {
+        if ($request->user()->id !== $server->owner_id && !$request->user()->root_admin) {
             throw new DisplayException('You do not have permission to split this server.');
         }
 
@@ -238,7 +238,7 @@ class SplitController extends ClientApiController
     {
         $this->requireMaster($server);
 
-        if ($request->user()->id !== $server->owner_id && !$request->user()->isRootAdmin()) {
+        if ($request->user()->id !== $server->owner_id && !$request->user()->root_admin) {
             throw new DisplayException('You do not have permission to update split servers.');
         }
 
@@ -340,7 +340,7 @@ class SplitController extends ClientApiController
     {
         $this->requireMaster($server);
 
-        if ($request->user()->id !== $server->owner_id && !$request->user()->isRootAdmin()) {
+        if ($request->user()->id !== $server->owner_id && !$request->user()->root_admin) {
             throw new DisplayException('You do not have permission to delete split servers.');
         }
 
