@@ -207,4 +207,39 @@ else
     info "Patched build.blade.php"
 fi
 
+# ── SplitController transaction fix ──────────────────────────────────────────
+# Blueprint copies the app directory during install, but may overwrite it
+# from a cached internal copy. We force the patched version in place here
+# and also schedule a background re-apply to catch any post-script overwrites.
+
+CONTROLLER="${EXT}/app/SplitController.php"
+FIXED="${EXT}/private/SplitController.php"
+
+apply_fix() {
+    local attempts=0
+    while [ $attempts -lt 10 ]; do
+        if [ -f "$CONTROLLER" ]; then
+            if grep -q "Outside the transaction" "$CONTROLLER"; then
+                return 0
+            fi
+            cp "$FIXED" "$CONTROLLER"
+            info "SplitController.php transaction fix applied"
+            return 0
+        fi
+        sleep 1
+        attempts=$((attempts + 1))
+    done
+    info "WARNING: Could not apply SplitController fix — file not found"
+}
+
+# Apply immediately (works if script runs after app copy)
+if [ -f "$CONTROLLER" ]; then
+    cp "$FIXED" "$CONTROLLER"
+    info "SplitController.php transaction fix applied"
+else
+    # Schedule deferred apply in background for cases where app copy happens after script
+    (sleep 5 && apply_fix) &
+    info "SplitController.php fix scheduled"
+fi
+
 info "Installation complete."
