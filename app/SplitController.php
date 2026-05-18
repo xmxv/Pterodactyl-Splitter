@@ -101,7 +101,7 @@ class SplitController extends ClientApiController
     {
         $this->requireMaster($server);
 
-        if (!$request->user()->id === $server->owner_id && !$request->user()->isRootAdmin()) {
+        if ($request->user()->id !== $server->owner_id && !$request->user()->isRootAdmin()) {
             throw new DisplayException('You do not have permission to split this server.');
         }
 
@@ -129,7 +129,11 @@ class SplitController extends ClientApiController
             'sync_subusers'    => 'sometimes|boolean',
         ]);
 
-        DB::transaction(function () use ($master, $data, $request) {
+        // Validate resources and lock allocation inside transaction.
+        // creationService->handle() is intentionally called OUTSIDE —
+        // it triggers a Wings API callback to the panel, which would get
+        // a 404 RecordNotFoundException if the row isn't committed yet.
+        $payload = DB::transaction(function () use ($master, $data) {
             $master = Server::lockForUpdate()->findOrFail($master->id);
 
             $remaining = $this->computeRemaining($master);
@@ -175,46 +179,58 @@ class SplitController extends ClientApiController
                     $environment[$v->env_variable] = $v->default_value;
                 });
 
-            $swap = $master->swap === 0 ? 0 : $data['swap'];
+            return [
+                'master'      => $master,
+                'allocation'  => $allocation,
+                'egg'         => $egg,
+                'environment' => $environment,
+                'swap'        => $master->swap === 0 ? 0 : $data['swap'],
+            ];
+        });
 
-            $newServer = $this->creationService->handle([
-                'name'             => $data['name'],
-                'description'      => $data['description'] ?? '',
-                'owner_id'         => $master->owner_id,
-                'node_id'          => $master->node_id,
-                'allocation_id'    => $allocation->id,
-                'database_limit'   => $data['database_limit'],
-                'allocation_limit' => $data['allocation_limit'],
-                'backup_limit'     => $data['backup_limit'],
-                'memory'           => $data['memory'],
-                'disk'             => $data['disk'],
-                'swap'             => $swap,
-                'io'               => $master->io,
-                'cpu'              => $data['cpu'],
-                'nest_id'          => $master->nest_id,
-                'egg_id'           => $master->egg_id,
-                'startup'          => $egg->startup,
-                'image'            => $master->image,
-                'environment'      => $environment,
-                'start_on_completion' => false,
-            ]);
+        // Outside the transaction — Wings can now find the committed row.
+        $master      = $payload['master'];
+        $allocation  = $payload['allocation'];
+        $egg         = $payload['egg'];
+        $environment = $payload['environment'];
 
-            $newServer->split_masteruuid = $master->uuid;
-            $newServer->save();
+        $newServer = $this->creationService->handle([
+            'name'                => $data['name'],
+            'description'         => $data['description'] ?? '',
+            'owner_id'            => $master->owner_id,
+            'node_id'             => $master->node_id,
+            'allocation_id'       => $allocation->id,
+            'database_limit'      => $data['database_limit'],
+            'allocation_limit'    => $data['allocation_limit'],
+            'backup_limit'        => $data['backup_limit'],
+            'memory'              => $data['memory'],
+            'disk'                => $data['disk'],
+            'swap'                => $payload['swap'],
+            'io'                  => $master->io,
+            'cpu'                 => $data['cpu'],
+            'nest_id'             => $master->nest_id,
+            'egg_id'              => $master->egg_id,
+            'startup'             => $egg->startup,
+            'image'               => $master->image,
+            'environment'         => $environment,
+            'start_on_completion' => false,
+        ]);
 
-            if (is_null($master->split_masteruuid)) {
-                $master->split_masteruuid = $master->uuid;
-                $master->save();
-            }
+        $newServer->split_masteruuid = $master->uuid;
+        $newServer->save();
 
-            if (!empty($data['sync_subusers'])) {
-                foreach ($master->subusers as $subuser) {
-                    if (!$newServer->subusers()->where('user_id', $subuser->user_id)->exists()) {
-                        $this->subuserCreationService->handle($newServer, $subuser->user->email, $subuser->permissions);
-                    }
+        if (is_null($master->split_masteruuid)) {
+            $master->split_masteruuid = $master->uuid;
+            $master->save();
+        }
+
+        if (!empty($data['sync_subusers'])) {
+            foreach ($master->subusers as $subuser) {
+                if (!$newServer->subusers()->where('user_id', $subuser->user_id)->exists()) {
+                    $this->subuserCreationService->handle($newServer, $subuser->user->email, $subuser->permissions);
                 }
             }
-        });
+        }
 
         return response('', 204);
     }
@@ -223,7 +239,7 @@ class SplitController extends ClientApiController
     {
         $this->requireMaster($server);
 
-        if (!$request->user()->id === $server->owner_id && !$request->user()->isRootAdmin()) {
+        if ($request->user()->id !== $server->owner_id && !$request->user()->isRootAdmin()) {
             throw new DisplayException('You do not have permission to update split servers.');
         }
 
@@ -324,7 +340,7 @@ class SplitController extends ClientApiController
     {
         $this->requireMaster($server);
 
-        if (!$request->user()->id === $server->owner_id && !$request->user()->isRootAdmin()) {
+        if ($request->user()->id !== $server->owner_id && !$request->user()->isRootAdmin()) {
             throw new DisplayException('You do not have permission to delete split servers.');
         }
 
