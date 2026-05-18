@@ -47,11 +47,13 @@ const ResourceRow = styled.div`
 interface ServerRowProps {
     server: any;
     isMaster: boolean;
+    remainingResources?: { cpu: number; memory: number; disk: number; swap: number };
+    originalLimits?: { cpu: number; memory: number; disk: number; swap: number };
     onEdit: (uuid: string) => void;
     onOpen: (id: string) => void;
 }
 
-const ServerRow = memo(({ server, isMaster, onEdit, onOpen }: ServerRowProps) => {
+const ServerRow = memo(({ server, isMaster, remainingResources, originalLimits, onEdit, onOpen }: ServerRowProps) => {
     const [status, setStatus] = useState<ServerPowerState | null>(null);
 
     useEffect(() => {
@@ -85,17 +87,33 @@ const ServerRow = memo(({ server, isMaster, onEdit, onOpen }: ServerRowProps) =>
                         )}
                         <div css={tw`flex flex-wrap gap-3 mt-1.5`}>
                             <span css={tw`text-xs text-neutral-400`}>
-                                CPU <span css={tw`text-neutral-200`}>{fmtCpu(server.limits.cpu)}</span>
+                                CPU{isMaster && remainingResources && originalLimits ? (
+                                    <span css={tw`text-neutral-200`}> {fmtCpu(originalLimits.cpu === 0 ? 0 : remainingResources.cpu)} <span css={tw`text-neutral-500`}>/ {fmtCpu(originalLimits.cpu)}</span></span>
+                                ) : (
+                                    <span css={tw`text-neutral-200`}> {fmtCpu(server.limits.cpu)}</span>
+                                )}
                             </span>
                             <span css={tw`text-xs text-neutral-400`}>
-                                RAM <span css={tw`text-neutral-200`}>{fmtMiB(server.limits.memory)}</span>
+                                RAM{isMaster && remainingResources && originalLimits ? (
+                                    <span css={tw`text-neutral-200`}> {fmtMiB(originalLimits.memory === 0 ? 0 : remainingResources.memory)} <span css={tw`text-neutral-500`}>/ {fmtMiB(originalLimits.memory)}</span></span>
+                                ) : (
+                                    <span css={tw`text-neutral-200`}> {fmtMiB(server.limits.memory)}</span>
+                                )}
                             </span>
                             <span css={tw`text-xs text-neutral-400`}>
-                                Disk <span css={tw`text-neutral-200`}>{fmtMiB(server.limits.disk)}</span>
+                                Disk{isMaster && remainingResources && originalLimits ? (
+                                    <span css={tw`text-neutral-200`}> {fmtMiB(originalLimits.disk === 0 ? 0 : remainingResources.disk)} <span css={tw`text-neutral-500`}>/ {fmtMiB(originalLimits.disk)}</span></span>
+                                ) : (
+                                    <span css={tw`text-neutral-200`}> {fmtMiB(server.limits.disk)}</span>
+                                )}
                             </span>
                             {server.limits.swap > 0 && (
                                 <span css={tw`text-xs text-neutral-400`}>
-                                    Swap <span css={tw`text-neutral-200`}>{fmtMiB(server.limits.swap)}</span>
+                                    Swap{isMaster && remainingResources && originalLimits ? (
+                                        <span css={tw`text-neutral-200`}> {fmtMiB(originalLimits.swap === 0 ? 0 : remainingResources.swap)} <span css={tw`text-neutral-500`}>/ {fmtMiB(originalLimits.swap)}</span></span>
+                                    ) : (
+                                        <span css={tw`text-neutral-200`}> {fmtMiB(server.limits.swap)}</span>
+                                    )}
                                 </span>
                             )}
                         </div>
@@ -295,6 +313,8 @@ const SplitServerContainer = () => {
                         <ServerRow
                             server={masterData}
                             isMaster
+                            remainingResources={rem}
+                            originalLimits={orig}
                             onEdit={() => {}}
                             onOpen={(id) => window.open(`/server/${id}`, '_blank')}
                         />
