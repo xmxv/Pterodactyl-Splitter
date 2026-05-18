@@ -202,7 +202,7 @@ const SplitServerContainer = () => {
         (orig.cpu === 0 || rem.cpu >= 10) &&
         (orig.memory === 0 || rem.memory >= 128) &&
         (orig.disk === 0 || rem.disk >= 256) &&
-        rem.allocations >= 1;
+        (orig.allocations === undefined || orig.allocations === 0 || rem.allocations >= 1);
 
     const children = splitData.servers.filter((s) => s.uuid !== uuid);
     const masterData = splitData.servers.find((s) => s.uuid === uuid) ?? splitData.servers[0];

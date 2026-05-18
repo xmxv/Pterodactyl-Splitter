@@ -89,10 +89,13 @@ class SplitController extends ClientApiController
                 ->toArray()['data'],
             'remaining_resources' => $remaining,
             'original_limits'    => [
-                'cpu'    => $server->cpu,
-                'memory' => $server->memory,
-                'disk'   => $server->disk,
-                'swap'   => $server->swap,
+                'cpu'         => $server->cpu,
+                'memory'      => $server->memory,
+                'disk'        => $server->disk,
+                'swap'        => $server->swap,
+                'databases'   => $server->database_limit ?? 0,
+                'allocations' => $server->allocation_limit ?? 0,
+                'backups'     => $server->backup_limit ?? 0,
             ],
         ];
     }
@@ -146,13 +149,13 @@ class SplitController extends ClientApiController
             if ($master->swap > 0 && $data['swap'] > $remaining['swap']) {
                 throw new DisplayException("Swap requested ({$data['swap']} MiB) exceeds available ({$remaining['swap']} MiB).");
             }
-            if ($data['database_limit'] > $remaining['databases']) {
+            if (($master->database_limit ?? 0) !== 0 && $data['database_limit'] > $remaining['databases']) {
                 throw new DisplayException("Database limit ({$data['database_limit']}) exceeds available ({$remaining['databases']}).");
             }
-            if ($data['allocation_limit'] > $remaining['allocations']) {
+            if (($master->allocation_limit ?? 0) !== 0 && $data['allocation_limit'] > $remaining['allocations']) {
                 throw new DisplayException("Allocation limit ({$data['allocation_limit']}) exceeds available ({$remaining['allocations']}).");
             }
-            if ($data['backup_limit'] > $remaining['backups']) {
+            if (($master->backup_limit ?? 0) !== 0 && $data['backup_limit'] > $remaining['backups']) {
                 throw new DisplayException("Backup limit ({$data['backup_limit']}) exceeds available ({$remaining['backups']}).");
             }
 
@@ -296,13 +299,13 @@ class SplitController extends ClientApiController
             if ($dSwap > 0 && $master->swap > 0 && $dSwap > $remaining['swap']) {
                 throw new DisplayException("Swap increase of {$dSwap} MiB exceeds available {$remaining['swap']} MiB.");
             }
-            if ($dDb > 0 && $dDb > $remaining['databases']) {
+            if ($dDb > 0 && ($master->database_limit ?? 0) !== 0 && $dDb > $remaining['databases']) {
                 throw new DisplayException("Database limit increase of {$dDb} exceeds available {$remaining['databases']}.");
             }
-            if ($dAlloc > 0 && $dAlloc > $remaining['allocations']) {
+            if ($dAlloc > 0 && ($master->allocation_limit ?? 0) !== 0 && $dAlloc > $remaining['allocations']) {
                 throw new DisplayException("Allocation limit increase of {$dAlloc} exceeds available {$remaining['allocations']}.");
             }
-            if ($dBackup > 0 && $dBackup > $remaining['backups']) {
+            if ($dBackup > 0 && ($master->backup_limit ?? 0) !== 0 && $dBackup > $remaining['backups']) {
                 throw new DisplayException("Backup limit increase of {$dBackup} exceeds available {$remaining['backups']}.");
             }
 
