@@ -20,6 +20,9 @@ export interface ServerSplit {
         memory: number;
         disk: number;
         swap: number;
+        databases?: number;
+        allocations?: number;
+        backups?: number;
     };
 }
 
