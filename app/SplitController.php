@@ -225,7 +225,7 @@ class SplitController extends ClientApiController
         if (!empty($data['sync_subusers'])) {
             foreach ($master->subusers as $subuser) {
                 if (!$newServer->subusers()->where('user_id', $subuser->user_id)->exists()) {
-                    $permissions = $subuser->permissions->pluck('permission')->toArray();
+                    $permissions = $subuser->permissions;
                     $this->subuserCreationService->handle($newServer, $subuser->user->email, $permissions);
                 }
             }
@@ -326,7 +326,7 @@ class SplitController extends ClientApiController
             if (!empty($data['sync_subusers'])) {
                 foreach ($master->subusers as $subuser) {
                     if (!$child->subusers()->where('user_id', $subuser->user_id)->exists()) {
-                        $permissions = $subuser->permissions->pluck('permission')->toArray();
+                        $permissions = $subuser->permissions;
                         $this->subuserCreationService->handle($child, $subuser->user->email, $permissions);
                     }
                 }
