@@ -32,4 +32,9 @@ The extension will appear in your extensions list once installed.
 - Child servers are managed and deleted through the Splitter tab
 - Deleting the master server will also remove all of its children
 
+## Common issues 
+If you get a UTF-8 locale error, run: ``LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 blueprint -i splitter.blueprint``
+If you receive a `DaemonConnectionException` in browser console, run: ``unzip -p /var/www/pterodactyl/splitter.blueprint splitter/app/SplitController.php | sed 's/{identifier}/splitter/g' > /var/www/pterodactyl/.blueprint/extensions/splitter/app/SplitController.php
+php artisan optimize:clear``
+
 Any issues, report them or open a ticket via https://discord.gg/6r2jqvFS7e
